@@ -6,8 +6,29 @@ import numpy as np
 from tkinter import ttk
 from PIL import Image, ImageTk
 
-def bgr_to_hsv(img):
-    img = img.astype(np.float32) / 255.0
+
+def load_image():
+    global img, img_label, img_original_label, image_path, original_img, flag, rgb_img, img_bgr
+    file_path = filedialog.askopenfilename()
+    image_path = file_path
+    img = cv2.imread(file_path)
+    img = cv2.resize(img, (500, 500))
+    img_bgr = img.copy()
+    rgb_img = bgr_to_rgb(img)  # Конвертация из BGR в RGB с помощью формул
+    original_img = rgb_img.copy()
+    img = rgb_img.copy()
+    original_img = cv2.resize(original_img, (500, 500))
+    flag = "RGB"
+    display_image(img, img_label)
+    display_image(original_img, img_original_label)
+
+def display_image(img, label):
+    img_tk = ImageTk.PhotoImage(Image.fromarray(img))
+    label.config(image=img_tk)
+    label.image = img_tk
+
+def bgr_to_hsv(img_bgr):
+    img = img_bgr.astype(np.float32) / 255.0
     R, G, B = img[..., 0], img[..., 1], img[..., 2]
     Cmax = np.max(img, axis=2)
     Cmin = np.min(img, axis=2)
@@ -20,11 +41,20 @@ def bgr_to_hsv(img):
     mask = (Cmax == R)
     H[mask] = 60 * ((G[mask] - B[mask]) / delta[mask] % 6)
     mask = (Cmax == G)
-    H[mask] = 60 * ((B[mask] - R[mask]) / delta[mask] + 2)
+    H[mask] = 120 + 60 * ((B[mask] - R[mask]) / delta[mask] + 2)
     mask = (Cmax == B)
-    H[mask] = 60 * ((R[mask] - G[mask]) / delta[mask] + 4)
+    H[mask] = 240 + 60 * ((R[mask] - G[mask]) / delta[mask] + 4)
     hsv_img = (np.dstack((H, S, V)) * 255).astype(np.uint8)
     return hsv_img
+
+def bgr_to_xyz(img_bgr):
+    img = img_bgr.astype(np.float32) / 255.0
+    R, G, B = img[..., 0], img[..., 1], img[..., 2]
+    X = 0.412453*R + 0.357580*G + 0.189423*B
+    Y = 0.212671*R + 0.715160*G + 0.072169*B 
+    Z = 0.019334*R + 0.119193*G + 0.950227*B
+    xyz_img = (np.dstack((X,Y,Z)) * 255).astype(np.uint8)
+    return xyz_img
 
 def bgr_to_cmyk(img_bgr):
     img = img_bgr.astype(np.float64)/255
@@ -40,17 +70,21 @@ def bgr_to_cmyk(img_bgr):
 def bgr_to_lab(img_bgr):
     img = img_bgr.astype(np.float32) / 255.0
     R, G, B = img[..., 0], img[..., 1], img[..., 2]
-      
-    Cmax = np.max(img, axis=2)
-    Cmin = np.min(img, axis=2)
-    delta = Cmax - Cmin
-      
-    L = (Cmax + Cmin) / 2
-    a = (Cmax - R) / delta
-    b = (Cmax - G) / delta
+
+    X = 0.412453*R + 0.357580*G + 0.189423*B
+    Y = 0.212671*R + 0.715160*G + 0.072169*B 
+    Z = 0.019334*R + 0.119193*G + 0.950227*B
+
+    Xo = 244.66128
+    Yo = 255.0
+    Zo = 277.63227
+
+    L = 116 * (Y / Yo) - 16
+    a = 500 * ((X / Xo) - (Y / Yo))
+    b = 200 * ((Y / Yo) - (Z / Zo))
+    lab_img = (np.dstack((L,a,b)) * 255).astype(np.uint8)
+    return lab_img
     
-    image = (np.dstack((L,a,b)) * 255).astype(np.uint8)
-    return image
 
 def bgr_to_hsl(img_bgr):
     img = img_bgr.astype(np.float32) / 255.0
@@ -64,15 +98,13 @@ def bgr_to_hsl(img_bgr):
     S = np.zeros_like(delta)
     L = (Cmax + Cmin)/2
 
-    # вычисление оттенка
-    H[Cmax == R] = 60 * (((G - B)/delta)[Cmax == R] % 6)
-    H[Cmax == G] = 60 * (((B - R)/delta)[Cmax == G] + 2)
-    H[Cmax == B] = 60 * (((R - G)/delta)[Cmax == B] + 4)
 
-    # вычисление насыщенности
+    H[Cmax == R] = 60 * (((G - B)/delta)[Cmax == R] % 6)
+    H[Cmax == G] = 120 + 60 * (((B - R)/delta)[Cmax == G] + 2)
+    H[Cmax == B] = 240 + 60 * (((R - G)/delta)[Cmax == B] + 4)
+
     S[delta != 0] = delta[delta != 0] / (1 - np.abs(2 * L[delta != 0] - 1))
       
-
     image = (np.dstack((H,S,L)) * 255).astype(np.uint8)
     return image
 
@@ -91,22 +123,6 @@ def rgb_to_ycbcr(imf_ycbcr):
     image = (np.dstack((Y,C,B)) * 255).astype(np.uint8)
     return image  
 
-
-def load_image():
-    global img, img_label, img_original_label, image_path, original_img, flag, rgb_img, img_bgr
-    file_path = filedialog.askopenfilename()
-    image_path = file_path
-    img = cv2.imread(file_path)
-    img = cv2.resize(img, (500, 500))
-    img_bgr = img.copy()
-    rgb_img = bgr_to_rgb(img)  # Конвертация из BGR в RGB с помощью формул
-    original_img = rgb_img.copy()
-    img = rgb_img.copy()
-    original_img = cv2.resize(original_img, (500, 500))
-    flag = "RGB"
-    display_image(img, img_label)
-    display_image(original_img, img_original_label)
-
 def bgr_to_rgb(img):
     h, w, _ = img.shape
     rgb_img = np.zeros((h, w, 3), dtype=np.uint8)
@@ -115,11 +131,6 @@ def bgr_to_rgb(img):
             b, g, r = img[i, j]
             rgb_img[i, j] = [r, g, b]
     return rgb_img
-
-def display_image(img, label):
-    img_tk = ImageTk.PhotoImage(Image.fromarray(img))
-    label.config(image=img_tk)
-    label.image = img_tk
 
 def convert_color(color_space):
     global img, original_img, img_bgr, flag
@@ -145,6 +156,9 @@ def convert_color(color_space):
         elif color_space == 'LAB':
             flag = 'LAB'
             converted_img = bgr_to_lab(img_bgr)
+        elif color_space == 'XYZ':
+            flag = 'XYZ'
+            converted_img = bgr_to_xyz(img_bgr)
         display_image(converted_img, img_label)
     else:
         info_label.config(text="Ошибка. Загрузите другое изображение.")
@@ -167,6 +181,17 @@ def clear_info():
 
 def exit_app():
     root.destroy()
+
+color_spaces = {
+    'BGR': 'BGR',
+    'RGB': 'RGB',
+    'HSV': 'HSV',
+    'HSL': 'HSL',
+    'CMYK': 'CMYK',
+    'YCBCR': 'YCBCR',
+    'LAB': 'LAB',
+    'XYZ': 'XYZ',
+}
 
 root = tk.Tk()
 root.title("Abobus Converter")
@@ -191,16 +216,6 @@ img_original_label = tk.Label(img_frame)
 img_original_label.pack(side=tk.LEFT)
 img_label = tk.Label(img_frame)
 img_label.pack(side=tk.LEFT)
-
-color_spaces = {
-    'BGR': 'BGR',
-    'RGB': 'RGB',
-    'HSV': 'HSV',
-    'HSL': 'HSL',
-    'CMYK': 'CMYK',
-    'YCBCR': 'YCBCR',
-    'LAB': 'LAB'
-}
 
 info_button = tk.Button(root, text="Информация о изображении", command=get_image_info)
 info_button.pack(pady=10)
