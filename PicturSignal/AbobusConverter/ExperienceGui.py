@@ -6,7 +6,6 @@ import numpy as np
 from tkinter import ttk
 from PIL import Image, ImageTk
 
-
 def load_image():
     global img, img_label, img_original_label, image_path, original_img, flag, rgb_img, img_bgr
     file_path = filedialog.askopenfilename()
@@ -29,21 +28,25 @@ def display_image(img, label):
 
 def bgr_to_hsv(img_bgr):
     img = img_bgr.astype(np.float32) / 255.0
-    R, G, B = img[..., 0], img[..., 1], img[..., 2]
-    Cmax = np.max(img, axis=2)
-    Cmin = np.min(img, axis=2)
+    r, g, b = img[..., 0], img[..., 1], img[..., 2]
+    # Преобразование формата [0,255] в [0,1]
+    Cmax = np.maximum(r, np.maximum(g, b))
+    Cmin = np.minimum(r, np.minimum(g, b))
     delta = Cmax - Cmin
     
-    V = Cmax
-    S = np.where(Cmax!= 0, delta / Cmax, 0)
-    H = np.zeros_like(V)
+    # Вычисление оттенка (hue)
+    H = np.zeros_like(Cmax)
+    mask = delta != 0
+    H = np.where(Cmax == r, 60 * (((g - b) / delta) % 6), H)
+    H = np.where(Cmax == g, 60 * (((b - r) / delta) + 2), H)
+    H = np.where(Cmax == b, 60 * (((r - g) / delta) + 4), H)
     
-    mask = (Cmax == R)
-    H[mask] = 60 * ((G[mask] - B[mask]) / delta[mask] % 6)
-    mask = (Cmax == G)
-    H[mask] = 120 + 60 * ((B[mask] - R[mask]) / delta[mask] + 2)
-    mask = (Cmax == B)
-    H[mask] = 240 + 60 * ((R[mask] - G[mask]) / delta[mask] + 4)
+    # Вычисление насыщенности (saturation)
+    S = np.where(Cmax == 0, 0, delta / Cmax)
+    
+    # Вычисление яркости (value)
+    V = Cmax
+    
     hsv_img = (np.dstack((H, S, V)) * 255).astype(np.uint8)
     return hsv_img
 
@@ -66,7 +69,6 @@ def bgr_to_cmyk(img_bgr):
     image = (np.dstack((C,M,Y,K)) * 255).astype(np.uint8)
     return image
 
-
 def bgr_to_lab(img_bgr):
     img = img_bgr.astype(np.float32) / 255.0
     R, G, B = img[..., 0], img[..., 1], img[..., 2]
@@ -84,7 +86,6 @@ def bgr_to_lab(img_bgr):
     b = 200 * ((Y / Yo) - (Z / Zo))
     lab_img = (np.dstack((L,a,b)) * 255).astype(np.uint8)
     return lab_img
-    
 
 def bgr_to_hsl(img_bgr):
     img = img_bgr.astype(np.float32) / 255.0
