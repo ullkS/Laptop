@@ -1,4 +1,4 @@
-from tkinter import filedialog, Canvas, VERTICAL, LEFT
+from tkinter import filedialog, Canvas, VERTICAL, LEFT, Entry
 import cv2
 import os
 import tkinter as tk
@@ -6,10 +6,26 @@ import numpy as np
 from tkinter import ttk
 from PIL import Image, ImageTk
 
+def convert_pixel():
+    global img, img_label, coord_x_entry, coord_y_entry, imges
+    x = int(coord_x_entry.get())
+    y = int(coord_y_entry.get())
+    pixel = imges.getpixel((x, y))  
+
+    rgb = pixel
+    cmyk = imges.convert('CMYK').getpixel((x, y))
+    hsl = imges.convert('HSV').getpixel((x, y))
+    lab = imges.convert('LAB').getpixel((x, y))
+    hsv = imges.convert('HSV').getpixel((x, y))
+    ycbcr = imges.convert('YCbCr').getpixel((x, y))
+
+    result.config(text=f'RGB: {rgb}\nCMYK: {cmyk}\nHSL: {hsl}\nLAB: {lab}\nHSV: {hsv}\nYCbCr: {ycbcr}')
+
 def load_image():
-    global img, img_label, img_original_label, image_path, original_img, flag, rgb_img, img_bgr
+    global img, img_label, img_original_label, image_path, original_img, flag, rgb_img, img_bgr, imges
     file_path = filedialog.askopenfilename()
     image_path = file_path
+    imges = Image.open(image_path)
     img = cv2.imread(file_path)
     img = cv2.resize(img, (500, 500))
     img_bgr = img.copy()
@@ -230,6 +246,22 @@ color_space_combo.current(0)
 
 convert_button = tk.Button(root, text="Конвертация цвета", command=lambda: convert_color(color_space_combo.get()))
 convert_button.pack(pady=10)
+
+coord_x_label = tk.Label(root, text="X")
+coord_x_label.pack(pady=1)
+coord_x_entry = Entry(root)
+coord_x_entry.pack(pady=10)
+coord_y_label = tk.Label(root, text="Y")
+coord_y_label.pack(pady=1)
+coord_y_entry = Entry(root)
+coord_y_entry.pack(pady=10)
+
+convert_btn = tk.Button(root, text="Конвертация пикселя", command=convert_pixel)
+convert_btn.pack()
+convert_btn.pack(pady=10)
+
+result = tk.Label(root, text="")
+result.pack()
 
 exit_button = tk.Button(root, text="Выход", command=exit_app)
 exit_button.pack(pady=10)
