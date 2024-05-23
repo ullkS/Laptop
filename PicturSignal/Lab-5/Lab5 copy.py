@@ -19,20 +19,17 @@ class ImageProcessingApp:
         self.process_buttons_frame = tk.Frame(self.root)
         self.process_buttons_frame.pack()
 
-        self.erode_button = tk.Button(self.process_buttons_frame, text="Эрозия", command=self.erode_image)
+        self.erode_button = tk.Button(self.process_buttons_frame, text="Харриса", command=self.erode_image)
         self.erode_button.pack(side=tk.LEFT)
 
-        self.dilate_button = tk.Button(self.process_buttons_frame, text="Дилатация", command=self.dilate_image)
+        self.dilate_button = tk.Button(self.process_buttons_frame, text="SIFT", command=self.dilate_image)
         self.dilate_button.pack(side=tk.LEFT)
 
-        self.opening_button = tk.Button(self.process_buttons_frame, text="Открытие", command=self.opening_image)
+        self.opening_button = tk.Button(self.process_buttons_frame, text="SURF", command=self.opening_image)
         self.opening_button.pack(side=tk.LEFT)
 
-        self.closing_button = tk.Button(self.process_buttons_frame, text="Закрытие", command=self.closing_image)
+        self.closing_button = tk.Button(self.process_buttons_frame, text="FAST", command=self.closing_image)
         self.closing_button.pack(side=tk.LEFT)
-
-        self.gradient_button = tk.Button(self.process_buttons_frame, text="Градиент", command=self.gradient_image)
-        self.gradient_button.pack(side=tk.LEFT)
 
         self.image_label = tk.Label(self.root)
         self.image_label.pack()
@@ -48,7 +45,6 @@ class ImageProcessingApp:
         img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (400, 300))
         img = Image.fromarray(img)
-        self.gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         img_tk = ImageTk.PhotoImage(img)
         self.image_label.config(image=img_tk)
         self.image_label.image = img_tk
