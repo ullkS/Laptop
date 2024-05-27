@@ -44,17 +44,26 @@ class VideoProcessingApp:
 
     def blur_moving_objects(self):
         if self.cap is not None:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out = cv2.VideoWriter('output_blur_moving_objects.mp4', fourcc, self.cap.get(cv2.CAP_PROP_FPS), 
-                                  (int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            out = cv2.VideoWriter('output_video_blur_moving.avi', fourcc, 20.0, (int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
             while True:
                 frame = self.get_frame()
                 if frame is None:
                     break
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                blur = cv2.GaussianBlur(gray, (35, 35), 0)
-                processed_frame = cv2.cvtColor(blur, cv2.COLOR_GRAY2BGR)
-                out.write(processed_frame)
+                diff = cv2.absdiff(self.original_frame, frame)
+                gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+                blur = cv2.GaussianBlur(gray, (5, 5), 0)
+                ret, thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
+                dilated = cv2.dilate(thresh, None, iterations=3)
+                contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                for contour in contours:
+                    if cv2.contourArea(contour) < 500:
+                        continue
+                    (x, y, w, h) = cv2.boundingRect(contour)
+                    roi = frame[y:y+h, x:x+w]
+                    roi = cv2.GaussianBlur(roi, (25, 25), 0)
+                    frame[y:y+h, x:x+w] = roi
+                out.write(frame)
             out.release()
 
     def display_default_video(self):
