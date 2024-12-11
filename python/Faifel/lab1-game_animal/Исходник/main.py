@@ -64,7 +64,7 @@ def start_game():
         if messagebox.askquestion("Продолжить игру", "Продолжить игру?") == 'no':
             break
 
-    root.destroy()  # Закрываем основное окно после окончания игры
+    root.destroy()  
 
 # Создание основного окна
 root = tk.Tk()
